@@ -32,9 +32,10 @@ The production callback is `https://maliquespooner.com/wrapped/` and is register
 cd frontend
 npm ci
 npm run build
+npm run prepare:cloudflare
 cd ..
 npx wrangler whoami
 npx wrangler deploy
 ```
 
-The Worker strips `/wrapped` before looking up static assets, while leaving the rest of `maliquespooner.com` untouched.
+The deploy preparation step places the export under the actual `/wrapped` directory so Cloudflare serves the page and its Next.js route assets at their public URLs. The Worker routes remain limited to `/wrapped`, leaving the rest of `maliquespooner.com` untouched.

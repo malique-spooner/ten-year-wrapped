@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prepare:cloudflare": "node scripts/prepare-cloudflare-assets.mjs",
     "start": "next start",
     "lint": "next lint"
   },
