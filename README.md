@@ -1,4 +1,4 @@
-# Malik Spooner Wrapped
+# Malique Spooner Wrapped
 
 Source for the Spotify listening story at **https://maliquespooner.com/wrapped/**.
 
