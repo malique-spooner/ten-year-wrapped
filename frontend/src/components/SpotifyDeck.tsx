@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { DiscoveryPoint, GenreSeries, PrototypePayload, SignatureTrack } from "@/data/prototype";
-import { SpotifyLive } from "@/components/SpotifyLive";
+import type { PrototypePayload, SignatureTrack } from "@/data/prototype";
 
 const lifeChapters = [
   { year: 2020, label: "Football, at its peak", title: "A title. Then the shape of life starts to change.", detail: "At Nottingham Forest, a 2020 league title was a high point in the football chapter. The years that followed brought a gradual move from playing in high-performance teams to building systems of your own.", marker: "NOTTINGHAM FOREST · LEAGUE TITLE" },
@@ -34,111 +33,6 @@ function Cover({ track, className = "" }: { track: SignatureTrack; className?: s
   );
 }
 
-function GenreLineChart({
-  genre,
-  years,
-}: {
-  genre: GenreSeries;
-  years: number[];
-}) {
-  const values = years.map((year) => genre.series.find((item) => item.year === year)?.share ?? 0);
-  const maxValue = Math.max(...values, 1);
-  const chartTop = 20;
-  const chartBottom = 154;
-  const chartLeft = 28;
-  const chartRight = 692;
-  const pointX = (index: number) => chartLeft + (index / Math.max(years.length - 1, 1)) * (chartRight - chartLeft);
-  const pointY = (value: number) => chartBottom - (value / maxValue) * (chartBottom - chartTop);
-  const points = values.map((value, index) => pointX(index) + "," + pointY(value)).join(" ");
-  const labelYears = years.filter((_, index) => index % 2 === 0 || index === years.length - 1);
-
-  return (
-    <div className="genre-plot">
-      <svg
-        viewBox="0 0 720 190"
-        role="img"
-        aria-label={genre.genre + " share of listening by year"}
-        preserveAspectRatio="none"
-      >
-        <desc>{years.map((year, index) => year + ": " + format(values[index], 1) + "%").join("; ")}</desc>
-        {[0, 0.5, 1].map((fraction) => {
-          const y = chartBottom - fraction * (chartBottom - chartTop);
-          const label = format(maxValue * fraction, 1) + "%";
-          return (
-            <g key={fraction}>
-              <line x1={chartLeft} x2={chartRight} y1={y} y2={y} className="plot-grid" />
-              <text x="0" y={y + 4} className="plot-axis-label">{label}</text>
-            </g>
-          );
-        })}
-        <polyline points={points} fill="none" className="genre-line" />
-        {values.map((value, index) => (
-          <circle
-            key={years[index]}
-            cx={pointX(index)}
-            cy={pointY(value)}
-            r="4"
-            className="genre-dot"
-          >
-            <title>{years[index] + ": " + format(value, 1) + "%"}</title>
-          </circle>
-        ))}
-        {labelYears.map((year) => {
-          const index = years.indexOf(year);
-          return (
-            <text key={year} x={pointX(index)} y="181" textAnchor="middle" className="plot-year-label">
-              {String(year).slice(-2)}
-            </text>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-function DiscoveryChart({
-  rows,
-  selectedYear,
-  onSelectYear,
-}: {
-  rows: DiscoveryPoint[];
-  selectedYear: number;
-  onSelectYear: (year: number) => void;
-}) {
-  const maxTotal = Math.max(...rows.map((row) => row.newCount + row.returningCount), 1);
-
-  return (
-    <div className="discovery-chart" role="group" aria-label="New and returning artists by year">
-      {rows.map((row) => {
-        const total = row.newCount + row.returningCount;
-        const isSelected = row.year === selectedYear;
-        const barWidth = (total / maxTotal) * 100;
-        const newWidth = total ? (row.newCount / total) * 100 : 0;
-        return (
-          <button
-            className={"discovery-row" + (isSelected ? " is-selected" : "")}
-            key={row.year}
-            type="button"
-            aria-pressed={isSelected}
-            aria-label={row.year + ": " + format(row.newCount) + " new artists, " + format(row.returningCount) + " returning"}
-            title={row.year + " · " + format(row.newCount) + " new · " + format(row.returningCount) + " returning"}
-            onClick={() => onSelectYear(row.year)}
-          >
-            <span className="discovery-year">{String(row.year).slice(-2)}</span>
-            <span className="discovery-bar-track">
-              <span className="discovery-bar" style={{ width: barWidth + "%" }}>
-                <span className="discovery-new" style={{ width: newWidth + "%" }} />
-                <span className="discovery-returning" style={{ width: 100 - newWidth + "%" }} />
-              </span>
-            </span>
-            <span className="discovery-total">{format(total)}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fallback" | "api" }) {
   const years = useMemo(
     () => [...data.listeningEras.years].sort((left, right) => left.year - right.year),
@@ -146,14 +40,8 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
   );
   const initialYear = data.listeningSnapshot.topYear ?? years.at(-1)?.year ?? years[0]?.year ?? 2020;
   const [selectedYear, setSelectedYear] = useState(initialYear);
-  const [selectedGenre, setSelectedGenre] = useState(data.genreDrift.selectedGenre);
-  const year = years.find((item) => item.year === selectedYear) ?? years[0];
   const signatureTracks = data.signatureRecords.tracks;
   const featureTrack = signatureTracks[0] ?? data.signatureRecords.tracks[0];
-  const selectedGenreData =
-    data.genreDrift.genres.find((item) => item.genre === selectedGenre) ?? data.genreDrift.genres[0];
-  const discoveryRows = data.discoveryVsComfort.series.Artists ?? [];
-  const selectedDiscovery = discoveryRows.find((item) => item.year === selectedYear);
   const topArtist = data.topArtists[0];
   const maxHours = Math.max(...years.map((item) => item.hours), 1);
   const journeyYears = years.filter((item) => item.year >= 2020);
@@ -161,7 +49,6 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
     setSelectedYear(targetYear);
     requestAnimationFrame(() => document.getElementById("journey-" + targetYear)?.scrollIntoView({ behavior: "smooth", block: "center" }));
   };
-  const topGenres = data.genreDrift.genres;
 
   return (
     <main className="dashboard" id="top">
@@ -171,9 +58,8 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           <span className="brand-name">MALIQUE SPOONER <small>LISTENING ARCHIVE</small></span>
         </a>
         <nav className="header-nav" aria-label="Page sections">
+          <a href="#overview">THE ARCHIVE</a>
           <a href="#journey">THE JOURNEY</a>
-          <a href="#your-spotify">LISTENING NOW</a>
-          <a href="#shifts">THE SHIFTS</a>
           <a href="#records">THE RECORDS</a>
         </nav>
         <span className="header-date">2016 — 2026</span>
@@ -216,7 +102,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           </div>
         </section>
 
-        <section className="overview-section" aria-labelledby="overview-title">
+        <section className="overview-section" id="overview" aria-labelledby="overview-title">
           <div className="section-heading">
             <div>
               <p className="eyebrow">THE BIG PICTURE / 01</p>
@@ -259,7 +145,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
               <p className="eyebrow">THE JOURNEY / 02</p>
               <h2 id="life-title">A life, heard and seen.</h2>
             </div>
-            <span className="section-aside">CAREER MILESTONES × MEDIA TRAIL · 2020—NOW</span>
+            <span className="section-aside">CV + SPOTIFY · 2020—NOW / YOUTUBE · MAY 2025—MAY 2026</span>
           </div>
           <div className="journey-chart-panel">
             <div className="chart-title-row">
@@ -286,6 +172,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
             {lifeChapters.map((chapter) => {
               const music = years.find((item) => item.year === chapter.year);
               const youtube = youtubeEvidence[chapter.year];
+              const artistDiscovery = data.discoveryVsComfort.series.Artists?.find((item) => item.year === chapter.year);
               return (
                 <article className={"journey-chapter" + (chapter.year === selectedYear ? " is-selected" : "")} id={"journey-" + chapter.year} key={chapter.year}>
                   <div className="journey-year-rail"><strong>{chapter.year}</strong><span>{chapter.label}</span></div>
@@ -293,25 +180,21 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
                     <div className="journey-heading-row"><span className="life-marker">{chapter.marker}</span><span className="journey-chapter-index">CHAPTER {String(chapter.year).slice(-2)}</span></div>
                     <h3>{chapter.title}</h3>
                     <p className="journey-description">{chapter.detail}</p>
-                    <div className="journey-evidence">
+                    <div className={"journey-evidence" + (!youtube ? " is-single" : "")}>
                       {music ? <div className="journey-evidence-card spotify-proof">
                         <span className="chart-kicker">SPOTIFY · PERSONAL LISTENING ARCHIVE</span>
                         <strong className="journey-proof-stat">{format(music.hours, 1)}<small> HRS</small></strong>
                         <span><b>{music.topArtist}</b> on repeat</span>
                         <span className="journey-track">“{music.topTrack}” was the year’s top track</span>
+                        {artistDiscovery ? <span className="journey-track">{format(artistDiscovery.newCount)} artists first appeared in this Spotify export</span> : null}
                       </div> : null}
-                      <div className="journey-evidence-card youtube-proof">
+                      {youtube ? <div className="journey-evidence-card youtube-proof">
                         <span className="chart-kicker">YOUTUBE · SAVED ACTIVITY</span>
-                        {youtube ? <>
-                          <strong className="journey-proof-stat">{format(youtube.count)}<small> WATCH EVENTS</small></strong>
-                          <span className="youtube-period">{youtube.period} · NON-AD WATCH HISTORY</span>
-                          <span>{youtube.signal}</span>
-                          <span className="journey-track">Recurring channels: {youtube.channels}</span>
-                        </> : <>
-                          <strong className="youtube-unavailable">Not in the Takeout currently on hand.</strong>
-                          <span>Available YouTube history begins 13 May 2025. This chapter is told from the CV and portfolio, with Spotify for the soundtrack.</span>
-                        </>}
-                      </div>
+                        <strong className="journey-proof-stat">{format(youtube.count)}<small> WATCH EVENTS</small></strong>
+                        <span className="youtube-period">{youtube.period} · NON-AD WATCH HISTORY</span>
+                        <span>{youtube.signal}</span>
+                        <span className="journey-track">Recurring channels: {youtube.channels}</span>
+                      </div> : null}
                     </div>
                   </div>
                 </article>
@@ -321,64 +204,10 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           <p className="life-footnote">CV and portfolio records establish the career dates. Spotify shows listening in the same calendar year. The YouTube figures come from the Takeout archive currently on hand (13 May 2025–27 May 2026); they show recorded viewing interests, not proof of a career event. Coverage of both Google accounts has not been confirmed, and 2026 is partial.</p>
         </section>
 
-        <SpotifyLive />
-
-        <section className="shifts-section" id="shifts" aria-labelledby="shifts-title">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">THE SHIFTS / 03</p>
-              <h2 id="shifts-title">Same listener. New frequencies.</h2>
-            </div>
-            <span className="section-aside">TASTE CHANGES IN THE DETAILS</span>
-          </div>
-          <div className="insight-grid">
-            <article className="insight-card genre-card">
-              <div className="chart-title-row">
-                <div><span className="chart-kicker">GENRE SHARE BY YEAR</span><strong>{selectedGenreData?.genre ?? "Genre"} over time</strong></div>
-                <span className="mini-stat">{selectedGenreData?.peakShare.toFixed(1)}<small>% PEAK</small></span>
-              </div>
-              <div className="genre-select" role="group" aria-label="Choose a genre to view">
-                {topGenres.map((item) => (
-                  <button
-                    className={"genre-chip" + (item.genre === selectedGenreData?.genre ? " is-active" : "")}
-                    key={item.genre}
-                    type="button"
-                    aria-pressed={item.genre === selectedGenreData?.genre}
-                    onClick={() => setSelectedGenre(item.genre)}
-                  >
-                    {item.genre}
-                  </button>
-                ))}
-              </div>
-              {selectedGenreData ? <GenreLineChart genre={selectedGenreData} years={years.map((item) => item.year)} /> : null}
-              <div className="genre-foot">
-                <span>FIRST APPEARED <strong>{selectedGenreData?.firstYear ?? "—"}</strong></span>
-                <span>STRONGEST YEAR <strong>{selectedGenreData?.peakYear ?? "—"}</strong></span>
-                <span>SCENE <strong>{selectedGenreData?.sceneLabel ?? "—"}</strong></span>
-              </div>
-            </article>
-            <article className="insight-card discovery-card">
-              <div className="chart-title-row">
-                <div><span className="chart-kicker">ARTIST DISCOVERY</span><strong>New names, familiar voices</strong></div>
-                <span className="mini-stat">{format(selectedDiscovery?.newCount ?? 0)}<small>NEW IN {year.year}</small></span>
-              </div>
-              <div className="discovery-legend">
-                <span><i className="legend-swatch legend-new" />New artists</span>
-                <span><i className="legend-swatch legend-returning" />Returning</span>
-              </div>
-              <DiscoveryChart rows={discoveryRows} selectedYear={year.year} onSelectYear={setSelectedYear} />
-              <div className="discovery-foot">
-                <span>ARTISTS MET FOR THE FIRST TIME</span>
-                <strong>{format(selectedDiscovery?.newCount ?? 0)} <small>of {format((selectedDiscovery?.newCount ?? 0) + (selectedDiscovery?.returningCount ?? 0))}</small></strong>
-              </div>
-            </article>
-          </div>
-        </section>
-
         <section className="records-section" id="records" aria-labelledby="records-title">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">THE RECORDS / 04</p>
+              <p className="eyebrow">THE RECORDS / 03</p>
               <h2 id="records-title">The songs that stayed.</h2>
             </div>
             <span className="section-aside">FEATURED TRACKS FROM THE ARCHIVE</span>
@@ -410,12 +239,13 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           <details className="methodology-details">
             <summary><span><small>DATA NOTES</small><strong id="methodology-title">How this story is counted</strong></span><span className="methodology-toggle" aria-hidden="true">+</span></summary>
             <div className="methodology-copy">
-              <p><strong>Source and coverage.</strong> This aggregate snapshot comes from a personal Spotify Extended Streaming History export. Events span 27 January 2016 to 17 May 2026; year charts use UTC calendar years, so 2026 is partial. The snapshot was generated on 8 November 2026.</p>
+              <p><strong>Source and coverage.</strong> Spotify listening comes from an Extended Streaming History export covering 27 January 2016 to 17 May 2026. YouTube watch history currently covers 13 May 2025 to 27 May 2026. The timeline pairs records from the same calendar year where both are available; it does not claim the media caused or verified a career event.</p>
               <p><strong>Listening time.</strong> Logged music-play duration is summed from milliseconds and converted to hours. Annual totals are rounded separately to one decimal place, so their visible sum can differ slightly from the all-time total.</p>
               <p><strong>Artists and tracks.</strong> Counts use the prepared snapshot’s canonical identities. Spotify recording IDs and grouping by track, artist and album can produce different totals for reissues, alternate versions and collaborations.</p>
-              <p><strong>Artist discovery.</strong> “New” means an artist first appears in this archive in that year; “returning” means the artist also appears after an earlier year. It describes first observed here, not a first-ever listen.</p>
+              <p><strong>First-seen artists.</strong> “First appeared in this export” means the artist is absent from earlier years in the available Spotify data. It does not mean this was the first time you ever listened to them.</p>
               <p><strong>Genres and track highlights.</strong> Genre labels are artist-level enrichment, not fields in the listening events; tags can overlap, so their yearly shares are not exclusive. Featured tracks are story highlights, not a verified all-time ranking.</p>
-              <p><strong>Privacy.</strong> Only aggregate values are included in this public site. Raw listening events and credentials remain local; live Spotify access is a separate, optional connection.</p>
+              <p><strong>YouTube coverage.</strong> The current local Takeout does not confirm whether both Google accounts are included. The site only shows YouTube figures for dates present in that archive; 2026 is partial.</p>
+              <p><strong>Privacy.</strong> Only aggregate music and viewing figures are included in this public site. Raw listening and watch history, and the source CV documents, remain local.</p>
             </div>
           </details>
         </section>
@@ -423,7 +253,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
 
       <footer className="site-footer">
         <a className="brand footer-brand" href="#top"><span className="brand-mark">M</span><span className="brand-name">MALIQUE SPOONER <small>LISTENING ARCHIVE</small></span></a>
-        <span>BUILT FROM A PERSONAL SPOTIFY DATA EXPORT</span>
+        <span>CAREER MILESTONES × PERSONAL MEDIA ARCHIVE</span>
         <a className="back-top" href="#top">BACK TO TOP ↑</a>
       </footer>
     </main>
