@@ -4,10 +4,23 @@ import { useMemo, useState } from "react";
 import type { DiscoveryPoint, GenreSeries, PrototypePayload, SignatureTrack } from "@/data/prototype";
 import { SpotifyLive } from "@/components/SpotifyLive";
 
+const lifeChapters = [
+  { year: 2020, label: "Football, at its peak", title: "A title. Then the shape of life starts to change.", detail: "At Nottingham Forest, a 2020 league title was a high point in the football chapter. The years that followed brought a gradual move from playing in high-performance teams to building systems of your own.", marker: "NOTTINGHAM FOREST · LEAGUE TITLE" },
+  { year: 2021, label: "A new kind of shift", title: "From the pitch to the pace of operations.", detail: "Professional football continued into 2021, alongside a new role in Amazon’s high-volume logistics operation. Teamwork, accuracy and performance under pressure carried across both environments.", marker: "FOOTBALL · AMAZON" },
+  { year: 2022, label: "Learning to build", title: "The first systems were made for real work.", detail: "At WOO Architects, you began turning operational problems into tools: WOO Time, Power BI dashboards and workflow automation. Computer Science at Goldsmiths added the formal foundations.", marker: "WOO ARCHITECTS · GOLDSMITHS" },
+  { year: 2023, label: "Two lives, one calendar", title: "Computer Science by day. Division I football by season.", detail: "You took your studies and football to Florida Atlantic University, balancing a full-time Computer Science course with NCAA Division I training, competition and travel. The WOO chapter ran into August.", marker: "FLORIDA ATLANTIC UNIVERSITY" },
+  { year: 2024, label: "The return", title: "A chapter closes; the skills stay in play.", detail: "The FAU student-athlete chapter ran through December. Alongside the degree, it added a different kind of proof: leading in a team, adapting across cultures and sustaining several demanding commitments.", marker: "NCAA DIVISION I · COMPUTER SCIENCE" },
+  { year: 2025, label: "People, culture, technology", title: "The work gets closer to the world around you.", detail: "Ada’s digital marketing and AI training added audience and storytelling to the toolkit. From June, City hospitality work brought direct experience of service, teams and nightlife environments.", marker: "ADA · CITY HOSPITALITY" },
+  { year: 2026, label: "The person behind the keyboard", title: "Lived experience becomes the raw material.", detail: "With Computer Science continuing at Goldsmiths, projects such as Night Economy and this music archive bring together sport, data, software, music and hospitality into things people can actually explore.", marker: "GOLDSMITHS · PRODUCT MAKING" },
+];
+
+const youtubeEvidence: Record<number, { count: number; channels: string; signal: string; period: string }> = {
+  2025: { count: 1231, channels: "Sky Sports Premier League · Sky News · Economics Explained · The B1M", signal: "Football, current affairs, economics and how things are built.", period: "13 MAY — 31 DEC" },
+  2026: { count: 960, channels: "Sky Sports Premier League · Sky News · Sky Sports F1 · The B1M", signal: "Football and F1 coverage, news, explainers and building.", period: "1 JAN — 27 MAY" },
+};
+
 const format = (value: number, digits = 0) =>
   new Intl.NumberFormat("en-GB", { maximumFractionDigits: digits }).format(value);
-
-const hoursFromSeconds = (seconds: number) => seconds / 3600;
 
 function Cover({ track, className = "" }: { track: SignatureTrack; className?: string }) {
   return (
@@ -47,6 +60,7 @@ function GenreLineChart({
         aria-label={genre.genre + " share of listening by year"}
         preserveAspectRatio="none"
       >
+        <desc>{years.map((year, index) => year + ": " + format(values[index], 1) + "%").join("; ")}</desc>
         {[0, 0.5, 1].map((fraction) => {
           const y = chartBottom - fraction * (chartBottom - chartTop);
           const label = format(maxValue * fraction, 1) + "%";
@@ -142,6 +156,11 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
   const selectedDiscovery = discoveryRows.find((item) => item.year === selectedYear);
   const topArtist = data.topArtists[0];
   const maxHours = Math.max(...years.map((item) => item.hours), 1);
+  const journeyYears = years.filter((item) => item.year >= 2020);
+  const selectJourneyYear = (targetYear: number) => {
+    setSelectedYear(targetYear);
+    requestAnimationFrame(() => document.getElementById("journey-" + targetYear)?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
   const topGenres = data.genreDrift.genres;
 
   return (
@@ -152,8 +171,8 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           <span className="brand-name">MALIQUE SPOONER <small>LISTENING ARCHIVE</small></span>
         </a>
         <nav className="header-nav" aria-label="Page sections">
-          <a href="#your-spotify">YOUR MUSIC</a>
-          <a href="#years">THE YEARS</a>
+          <a href="#journey">THE JOURNEY</a>
+          <a href="#your-spotify">LISTENING NOW</a>
           <a href="#shifts">THE SHIFTS</a>
           <a href="#records">THE RECORDS</a>
         </nav>
@@ -168,19 +187,16 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
             <p className="hero-deck">
               The songs that stayed. The years that changed. A personal soundtrack, seen all at once.
             </p>
-            <a className="text-link" href="#years">Explore the archive <span aria-hidden="true">↓</span></a>
+            <a className="text-link" href="#journey">Explore the journey <span aria-hidden="true">↓</span></a>
           </div>
           <div className="hero-feature">
             {featureTrack ? <Cover track={featureTrack} className="hero-cover" /> : null}
             <div className="hero-feature-shade" />
-            <div className="hero-feature-top"><span>ON REPEAT</span><span>NO. 01</span></div>
+            <div className="hero-feature-top"><span>ARCHIVE HIGHLIGHT</span></div>
             <div className="hero-feature-caption">
-              <span className="hero-feature-label">THE TRACK THAT STAYED</span>
+              <span className="hero-feature-label">TRACK SPOTLIGHT</span>
               <strong>{featureTrack?.trackName ?? data.listeningSnapshot.topTrack}</strong>
               <span>{featureTrack?.artistName ?? data.listeningSnapshot.topArtist}</span>
-              <span className="hero-feature-hours">
-                {format(hoursFromSeconds(featureTrack?.playsOrSeconds ?? 0), 1)} <small>HRS IN ROTATION</small>
-              </span>
             </div>
             {featureTrack?.id ? (
               <a
@@ -199,8 +215,6 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
             <span>01 / 04</span>
           </div>
         </section>
-
-        <SpotifyLive />
 
         <section className="overview-section" aria-labelledby="overview-title">
           <div className="section-heading">
@@ -224,7 +238,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
             <article className="metric-card">
               <span className="metric-label">TRACKS</span>
               <strong>{format(data.listeningSnapshot.uniqueTracks)}</strong>
-              <span className="metric-note">Most replayed: {data.listeningSnapshot.topTrack}</span>
+              <span className="metric-note">Track spotlight: {data.listeningSnapshot.topTrack}</span>
             </article>
             <article className="metric-card metric-peak">
               <span className="metric-label">THE LOUDEST YEAR</span>
@@ -239,59 +253,75 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           </div>
         </section>
 
-        <section className="years-section" id="years" aria-labelledby="years-title">
+        <section className="life-section" id="journey" aria-labelledby="life-title">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">THE YEARS / 02</p>
-              <h2 id="years-title">The soundtrack kept moving.</h2>
+              <p className="eyebrow">THE JOURNEY / 02</p>
+              <h2 id="life-title">A life, heard and seen.</h2>
             </div>
-            <span className="section-aside">SELECT A YEAR TO REWIND</span>
+            <span className="section-aside">CAREER MILESTONES × MEDIA TRAIL · 2020—NOW</span>
           </div>
-          <div className="year-panel">
-            <div className="year-focus" aria-live="polite">
-              <div className="year-focus-top"><span>YEAR IN FOCUS</span><span className="year-focus-pill">{year.year === data.listeningSnapshot.topYear ? "● LISTENING PEAK" : "● YEAR SELECTED"}</span></div>
-              <strong className="focus-year">{year.year}</strong>
-              <p className="focus-hours">{format(year.hours, 1)} <span>hours played</span></p>
-              <div className="focus-details">
-                <div><span>ON REPEAT</span><strong>{year.topArtist}</strong></div>
-                <div><span>TOP TRACK</span><strong>{year.topTrack}</strong></div>
-                <div><span>NEW ARTISTS</span><strong>{format(year.newArtists)}</strong></div>
-              </div>
+          <div className="journey-chart-panel">
+            <div className="chart-title-row">
+              <div><span className="chart-kicker">THE SOUNDTRACK, YEAR BY YEAR</span><strong>Choose a year to jump into its chapter</strong></div>
+              <span className="chart-unit">SPOTIFY</span>
             </div>
-            <div className="year-chart-panel">
-              <div className="chart-title-row">
-                <div><span className="chart-kicker">LISTENING HOURS</span><strong>Year by year</strong></div>
-                <span className="chart-unit">HOURS</span>
-              </div>
-              <div className="year-chart" role="group" aria-label="Select a year to view its listening details">
-                {years.map((item) => {
-                  const isActive = item.year === year.year;
-                  const height = Math.max((item.hours / maxHours) * 100, 3);
-                  return (
-                    <button
-                      key={item.year}
-                      className={"year-point" + (isActive ? " is-active" : "")}
-                      type="button"
-                      aria-pressed={isActive}
-                      aria-label={item.year + ": " + format(item.hours, 1) + " listening hours"}
-                      title={item.year + " · " + format(item.hours, 1) + " hours"}
-                      onClick={() => setSelectedYear(item.year)}
-                    >
-                      <span className="year-point-value">{isActive ? format(item.hours, 1) : ""}</span>
-                      <span className="year-point-track"><span className="year-point-fill" style={{ height: height + "%" }} /></span>
-                      <span className="year-point-label">{String(item.year).slice(-2)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="chart-axis-note"><span>2016</span><span>Tap a column to change year</span><span>2026</span></div>
+            <div className="year-chart journey-chart" role="group" aria-label="Choose a year in the life journey">
+              {journeyYears.map((item) => {
+                const isActive = item.year === selectedYear;
+                const height = Math.max((item.hours / maxHours) * 100, 3);
+                return (
+                  <button key={item.year} className={"year-point" + (isActive ? " is-active" : "")} type="button"
+                    aria-pressed={isActive} aria-label={item.year + ": " + format(item.hours, 1) + " listening hours"}
+                    title={item.year + " · " + format(item.hours, 1) + " hours"} onClick={() => selectJourneyYear(item.year)}>
+                    <span className="year-point-value">{format(item.hours, 1)}</span>
+                    <span className="year-point-track"><span className="year-point-fill" style={{ height: height + "%" }} /></span>
+                    <span className="year-point-label">{item.year}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="chapter-note">
-            <span className="chapter-note-icon">↗</span>
-            <p><strong>{year.year} was a {year.year === data.listeningSnapshot.topYear ? "peak" : "different"} chapter.</strong> {format(year.artistCount)} artists, {format(year.trackCount)} tracks{year.topGenre === "unknown" ? ". Genre detail is unavailable for this year." : ", with " + year.topGenre + " in the foreground."}</p>
+          <div className="journey-timeline">
+            {lifeChapters.map((chapter) => {
+              const music = years.find((item) => item.year === chapter.year);
+              const youtube = youtubeEvidence[chapter.year];
+              return (
+                <article className={"journey-chapter" + (chapter.year === selectedYear ? " is-selected" : "")} id={"journey-" + chapter.year} key={chapter.year}>
+                  <div className="journey-year-rail"><strong>{chapter.year}</strong><span>{chapter.label}</span></div>
+                  <div className="journey-chapter-body">
+                    <div className="journey-heading-row"><span className="life-marker">{chapter.marker}</span><span className="journey-chapter-index">CHAPTER {String(chapter.year).slice(-2)}</span></div>
+                    <h3>{chapter.title}</h3>
+                    <p className="journey-description">{chapter.detail}</p>
+                    <div className="journey-evidence">
+                      {music ? <div className="journey-evidence-card spotify-proof">
+                        <span className="chart-kicker">SPOTIFY · PERSONAL LISTENING ARCHIVE</span>
+                        <strong className="journey-proof-stat">{format(music.hours, 1)}<small> HRS</small></strong>
+                        <span><b>{music.topArtist}</b> on repeat</span>
+                        <span className="journey-track">“{music.topTrack}” was the year’s top track</span>
+                      </div> : null}
+                      <div className="journey-evidence-card youtube-proof">
+                        <span className="chart-kicker">YOUTUBE · SAVED ACTIVITY</span>
+                        {youtube ? <>
+                          <strong className="journey-proof-stat">{format(youtube.count)}<small> WATCH EVENTS</small></strong>
+                          <span className="youtube-period">{youtube.period} · NON-AD WATCH HISTORY</span>
+                          <span>{youtube.signal}</span>
+                          <span className="journey-track">Recurring channels: {youtube.channels}</span>
+                        </> : <>
+                          <strong className="youtube-unavailable">Not in the Takeout currently on hand.</strong>
+                          <span>Available YouTube history begins 13 May 2025. This chapter is told from the CV and portfolio, with Spotify for the soundtrack.</span>
+                        </>}
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
+          <p className="life-footnote">CV and portfolio records establish the career dates. Spotify shows listening in the same calendar year. The YouTube figures come from the Takeout archive currently on hand (13 May 2025–27 May 2026); they show recorded viewing interests, not proof of a career event. Coverage of both Google accounts has not been confirmed, and 2026 is partial.</p>
         </section>
+
+        <SpotifyLive />
 
         <section className="shifts-section" id="shifts" aria-labelledby="shifts-title">
           <div className="section-heading">
@@ -351,7 +381,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
               <p className="eyebrow">THE RECORDS / 04</p>
               <h2 id="records-title">The songs that stayed.</h2>
             </div>
-            <span className="section-aside">MOST HOURS SPENT TOGETHER</span>
+            <span className="section-aside">FEATURED TRACKS FROM THE ARCHIVE</span>
           </div>
           <div className="records-grid">
             {signatureTracks.slice(0, 8).map((track) => (
@@ -361,20 +391,33 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
                 target="_blank"
                 rel="noreferrer"
                 key={track.id}
+                aria-label={"Open " + track.trackName + " by " + track.artistName + " on Spotify (opens in a new tab)"}
               >
                 <div className="record-card-cover">
                   <Cover track={track} />
-                  <span className="record-rank">#{String(track.rank).padStart(2, "0")}</span>
                   <span className="record-open" aria-hidden="true">↗</span>
                 </div>
                 <div className="record-meta">
                   <div><strong>{track.trackName}</strong><span>{track.artistName}</span></div>
-                  <span className="record-hours">{format(hoursFromSeconds(track.playsOrSeconds), 1)}<small>HRS</small></span>
                 </div>
               </a>
             ))}
           </div>
           <p className="records-note">Select a record to open it on Spotify.</p>
+        </section>
+
+        <section className="methodology-section" aria-labelledby="methodology-title">
+          <details className="methodology-details">
+            <summary><span><small>DATA NOTES</small><strong id="methodology-title">How this story is counted</strong></span><span className="methodology-toggle" aria-hidden="true">+</span></summary>
+            <div className="methodology-copy">
+              <p><strong>Source and coverage.</strong> This aggregate snapshot comes from a personal Spotify Extended Streaming History export. Events span 27 January 2016 to 17 May 2026; year charts use UTC calendar years, so 2026 is partial. The snapshot was generated on 8 November 2026.</p>
+              <p><strong>Listening time.</strong> Logged music-play duration is summed from milliseconds and converted to hours. Annual totals are rounded separately to one decimal place, so their visible sum can differ slightly from the all-time total.</p>
+              <p><strong>Artists and tracks.</strong> Counts use the prepared snapshot’s canonical identities. Spotify recording IDs and grouping by track, artist and album can produce different totals for reissues, alternate versions and collaborations.</p>
+              <p><strong>Artist discovery.</strong> “New” means an artist first appears in this archive in that year; “returning” means the artist also appears after an earlier year. It describes first observed here, not a first-ever listen.</p>
+              <p><strong>Genres and track highlights.</strong> Genre labels are artist-level enrichment, not fields in the listening events; tags can overlap, so their yearly shares are not exclusive. Featured tracks are story highlights, not a verified all-time ranking.</p>
+              <p><strong>Privacy.</strong> Only aggregate values are included in this public site. Raw listening events and credentials remain local; live Spotify access is a separate, optional connection.</p>
+            </div>
+          </details>
         </section>
       </div>
 
