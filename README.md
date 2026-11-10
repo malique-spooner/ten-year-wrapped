@@ -2,7 +2,7 @@
 
 Source for the Spotify listening story at **https://maliquespooner.com/wrapped/**.
 
-The site is a Next.js static export mounted at `/wrapped` and served by the Malik Spooner domain.
+The site is a Next.js static export mounted at `/wrapped` and served by the Malique Spooner domain.
 
 ## Run locally
 
