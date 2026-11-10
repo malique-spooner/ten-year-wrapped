@@ -19,3 +19,22 @@ npm run build
 ```
 
 The public-facing aggregate snapshot used by the site is included. Raw Spotify exports, row-level listening history, credentials, and local generated datasets are not part of this repository.
+
+## Spotify connection
+
+The live library view uses Spotify Authorization Code with PKCE. It requests read-only scopes for saved tracks and albums, private playlists, and currently playing status. Tokens are kept in the connecting browser's local storage; use **Disconnect Spotify** in the page to clear them. Each visitor must connect their own Spotify account, and Spotify development-mode apps only permit accounts enabled in Spotify Developer Dashboard.
+
+The production callback is `https://maliquespooner.com/wrapped/` and is registered on the existing Spotify app. The static frontend is served by a path-scoped Cloudflare Worker so the root portfolio and other routes remain on the existing Worker.
+
+## Deploy to the Wrapped route
+
+```sh
+cd frontend
+npm ci
+npm run build
+cd ..
+npx wrangler whoami
+npx wrangler deploy
+```
+
+The Worker strips `/wrapped` before looking up static assets, while leaving the rest of `maliquespooner.com` untouched.

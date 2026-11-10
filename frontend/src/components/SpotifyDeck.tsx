@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { DiscoveryPoint, GenreSeries, PrototypePayload, SignatureTrack } from "@/data/prototype";
+import { SpotifyLive } from "@/components/SpotifyLive";
 
 const format = (value: number, digits = 0) =>
   new Intl.NumberFormat("en-GB", { maximumFractionDigits: digits }).format(value);
@@ -151,6 +152,7 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
           <span className="brand-name">MALIQUE SPOONER <small>LISTENING ARCHIVE</small></span>
         </a>
         <nav className="header-nav" aria-label="Page sections">
+          <a href="#your-spotify">YOUR MUSIC</a>
           <a href="#years">THE YEARS</a>
           <a href="#shifts">THE SHIFTS</a>
           <a href="#records">THE RECORDS</a>
@@ -197,6 +199,8 @@ export function SpotifyDeck({ data }: { data: PrototypePayload; dataSource: "fal
             <span>01 / 04</span>
           </div>
         </section>
+
+        <SpotifyLive />
 
         <section className="overview-section" aria-labelledby="overview-title">
           <div className="section-heading">

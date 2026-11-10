@@ -1,0 +1,14 @@
+{
+  "name": "ten-year-wrapped-static",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-10",
+  "routes": [
+    { "pattern": "maliquespooner.com/wrapped", "zone_name": "maliquespooner.com" },
+    { "pattern": "maliquespooner.com/wrapped/*", "zone_name": "maliquespooner.com" }
+  ],
+  "assets": {
+    "directory": "./frontend/out",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page"
+  }
+}
